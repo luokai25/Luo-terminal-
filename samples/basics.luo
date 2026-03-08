@@ -1,0 +1,38 @@
+// ===== LUO Sample Programs =====
+
+// --- Hello World ---
+PRINT "Hello, World!"
+PRINT "Welcome to LUO Terminal!"
+
+// --- Variables ---
+CREATE VARIABLE name SET "Luo User"
+CREATE VARIABLE version SET "1.0.0"
+
+PRINT "Name: " + name
+PRINT "Version: " + version
+
+// --- Simple Math ---
+CREATE VARIABLE a SET 10
+CREATE VARIABLE b SET 5
+
+PRINT "a + b = " + (a + b)
+PRINT "a - b = " + (a - b)
+PRINT "a * b = " + (a * b)
+PRINT "a / b = " + (a / b)
+
+// --- Conditions ---
+CREATE VARIABLE age SET 20
+
+IF age GREATER THAN 18 THEN
+    PRINT "Adult"
+END
+
+IF age EQUALS 20 THEN
+    PRINT "Age is 20"
+END
+
+// --- String Operations ---
+CREATE VARIABLE firstName SET "John"
+CREATE VARIABLE lastName SET "Doe"
+
+PRINT firstName + " " + lastName

@@ -1,0 +1,1843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUO Terminal - The Ultimate Programming Language</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0d0d0d;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #252525;
+            --accent: #33ff66;
+            --accent-dim: #1a8033;
+            --accent-blue: #00a8ff;
+            --accent-purple: #aa66ff;
+            --accent-orange: #ff9933;
+            --text: #e8e8e8;
+            --text-dim: #666666;
+            --error: #ff4444;
+            --warning: #ffaa00;
+            --success: #33ff66;
+            --user-msg: #33ff66;
+            --ai-msg: #1f1f1f;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-primary);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Editor Panel */
+        .editor-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 2px solid var(--bg-tertiary);
+        }
+
+        /* Top Bar - Termux Style */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: linear-gradient(180deg, #1a1a1a 0%, #141414 100%);
+            border-bottom: 1px solid #2a2a2a;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #33ff66 0%, #00cc44 100%);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0d0d0d;
+            font-weight: 800;
+            font-size: 16px;
+            box-shadow: 0 0 20px rgba(51,255,102,0.3);
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #33ff66, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+        }
+
+        .logo-version {
+            font-size: 10px;
+            color: var(--accent);
+            background: rgba(51,255,102,0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 8px;
+        }
+
+        .top-bar-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-run {
+            background: linear-gradient(135deg, #33ff66 0%, #00dd55 100%);
+            color: #0d0d0d;
+            box-shadow: 0 0 15px rgba(51,255,102,0.3);
+        }
+
+        .btn-run:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 25px rgba(51,255,102,0.5);
+        }
+
+        .btn-lang {
+            background: var(--bg-tertiary);
+            color: var(--text);
+            border: 1px solid #333;
+        }
+
+        .btn-lang:hover {
+            background: #333;
+            border-color: var(--accent);
+        }
+
+        .btn-lang.active {
+            background: var(--accent);
+            color: var(--bg-primary);
+            border-color: var(--accent);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text);
+            border: 1px solid #333;
+        }
+
+        .btn-secondary:hover {
+            background: #333;
+        }
+
+        /* Language Toolbar */
+        .lang-toolbar {
+            display: flex;
+            align-items: center;
+            padding: 6px 12px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--bg-tertiary);
+            gap: 4px;
+            overflow-x: auto;
+        }
+
+        .lang-btn {
+            padding: 5px 10px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .lang-btn:hover { color: var(--text); }
+        
+        .lang-btn.active {
+            background: rgba(51,255,102,0.15);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .lang-btn[data-lang="luo"].active {
+            background: rgba(51,255,102,0.2);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .lang-btn[data-lang="python"].active {
+            background: rgba(255,210,0,0.15);
+            border-color: #ffd200;
+            color: #ffd200;
+        }
+
+        .lang-btn[data-lang="javascript"].active {
+            background: rgba(247,223,30,0.15);
+            border-color: #f7df1e;
+            color: #f7df1e;
+        }
+
+        .lang-btn[data-lang="sql"].active {
+            background: rgba(0,168,255,0.15);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .lang-btn[data-lang="bash"].active {
+            background: rgba(170,102,255,0.15);
+            border-color: var(--accent-purple);
+            color: var(--accent-purple);
+        }
+
+        /* File Tabs */
+        .file-tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--bg-tertiary);
+            padding: 0 8px;
+            overflow-x: auto;
+        }
+
+        .file-tab {
+            padding: 8px 14px;
+            font-size: 12px;
+            color: var(--text-dim);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .file-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            background: rgba(51,255,102,0.05);
+        }
+
+        .file-tab:hover { color: var(--text); }
+
+        .new-tab-btn {
+            padding: 8px 10px;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .new-tab-btn:hover { color: var(--accent); }
+
+        /* Editor */
+        .editor-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .line-numbers {
+            padding: 16px 12px;
+            background: #0a0a0a;
+            color: #444;
+            font-size: 13px;
+            line-height: 1.6;
+            text-align: right;
+            user-select: none;
+            min-width: 45px;
+            overflow: hidden;
+        }
+
+        .code-editor {
+            flex: 1;
+            padding: 16px;
+            background: var(--bg-primary);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            border: none;
+            outline: none;
+            resize: none;
+            overflow: auto;
+            white-space: pre;
+            tab-size: 4;
+        }
+
+        .code-editor::placeholder { color: #444; }
+
+        /* Terminal */
+        .terminal-section {
+            height: 35%;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            background: #0a0a0a;
+            border-top: 2px solid var(--bg-tertiary);
+        }
+
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .terminal-title {
+            font-size: 12px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .terminal-output {
+            flex: 1;
+            padding: 12px 16px;
+            overflow: auto;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .output-line { margin-bottom: 3px; word-break: break-all; }
+        .output-prompt { color: var(--accent); margin-right: 8px; }
+        .output-result { color: var(--text); }
+        .output-error { color: var(--error); }
+        .output-success { color: var(--success); }
+        .output-info { color: var(--text-dim); }
+        .output-warn { color: var(--warning); }
+        
+        .output-python { color: #ffd200; }
+        .output-js { color: #f7df1e; }
+        .output-sql { color: var(--accent-blue); }
+        .output-bash { color: var(--accent-purple); }
+        .output-ai { color: #ff66aa; }
+
+        /* Status Bar */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 12px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--bg-tertiary);
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        .status-left, .status-right { display: flex; align-items: center; gap: 12px; }
+        .status-item { display: flex; align-items: center; gap: 4px; }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+        .status-dot.loading { background: var(--warning); animation: pulse 1s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* AI Panel */
+        .ai-panel {
+            width: 0;
+            background: var(--bg-secondary);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s ease;
+            overflow: hidden;
+            border-left: 2px solid var(--bg-tertiary);
+        }
+
+        .ai-panel.open { width: 400px; }
+
+        .ai-panel-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(180deg, #222 0%, #1a1a1a 100%);
+        }
+
+        .ai-panel-title {
+            font-size: 14px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #ff66aa, #aa66ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-close-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+        }
+
+        .ai-close-btn:hover { color: var(--text); }
+
+        /* API Key */
+        .api-key-section {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--bg-tertiary);
+            background: #151515;
+        }
+
+        .api-key-input {
+            width: 100%;
+            padding: 8px 10px;
+            background: var(--bg-primary);
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 4px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 11px;
+            outline: none;
+        }
+
+        .api-key-input:focus { border-color: var(--accent); }
+
+        /* Quick Actions */
+        .quick-actions {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--bg-tertiary);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .quick-action-btn {
+            padding: 4px 8px;
+            background: var(--bg-tertiary);
+            border: none;
+            border-radius: 3px;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-action-btn:hover {
+            background: var(--accent);
+            color: var(--bg-primary);
+            transform: scale(1.05);
+        }
+
+        /* Chat */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #0d0d0d;
+        }
+
+        .message {
+            max-width: 92%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #33ff66 0%, #00cc44 100%);
+            color: #0d0d0d;
+            border-bottom-right-radius: 2px;
+        }
+
+        .message.ai {
+            align-self: flex-start;
+            background: var(--ai-msg);
+            color: var(--text);
+            border: 1px solid #333;
+            border-bottom-left-radius: 2px;
+        }
+
+        .message pre {
+            background: #0a0a0a;
+            padding: 8px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 6px 0;
+            font-size: 11px;
+            border: 1px solid #222;
+        }
+
+        .code-block-wrapper {
+            position: relative;
+            margin: 8px 0;
+        }
+
+        .code-block-wrapper pre {
+            background: #0a0a0a;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 11px;
+            line-height: 1.4;
+            border: 1px solid #222;
+        }
+
+        .code-block-wrapper .code-actions {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .code-action-btn {
+            padding: 3px 8px;
+            background: var(--bg-tertiary);
+            border: none;
+            border-radius: 3px;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .code-action-btn:hover {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        /* Chat Input */
+        .chat-input-section {
+            padding: 10px 12px;
+            border-top: 1px solid var(--bg-tertiary);
+            display: flex;
+            gap: 6px;
+            background: #151515;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 8px 10px;
+            background: var(--bg-primary);
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 4px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 12px;
+            outline: none;
+            resize: none;
+            min-height: 36px;
+            max-height: 80px;
+        }
+
+        .chat-input:focus { border-color: var(--accent); }
+
+        .chat-send-btn {
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #ff66aa 0%, #aa66ff 100%);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .chat-send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255,102,170,0.4);
+        }
+
+        .chat-send-btn:disabled {
+            background: var(--bg-tertiary);
+            color: var(--text-dim);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Loading */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+            background: var(--ai-msg);
+            border-radius: 10px;
+            align-self: flex-start;
+            border: 1px solid #333;
+        }
+
+        .typing-indicator span {
+            width: 6px;
+            height: 6px;
+            background: #666;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 100% { opacity: 0.3; transform: translateY(0); }
+            50% { opacity: 1; transform: translateY(-3px); }
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1001;
+        }
+
+        .toast {
+            background: var(--bg-secondary);
+            border: 1px solid var(--accent);
+            padding: 10px 14px;
+            border-radius: 6px;
+            margin-top: 6px;
+            font-size: 12px;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .toast.error { border-color: var(--error); }
+        .toast.info { border-color: var(--accent-blue); }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444; }
+
+        /* Welcome Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-overlay.hidden { display: none; }
+
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 28px;
+            max-width: 600px;
+            width: 90%;
+            border: 1px solid #333;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .modal h2 {
+            background: linear-gradient(90deg, #33ff66, #00ff88, #33ff66);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+            font-size: 22px;
+        }
+
+        .modal p { color: #888; margin-bottom: 12px; line-height: 1.6; font-size: 13px; }
+
+        .modal .feature-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin: 16px 0;
+        }
+
+        .modal .feature-item {
+            background: var(--bg-primary);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal .feature-icon { font-size: 16px; }
+
+        .modal .example {
+            background: #0a0a0a;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 12px 0;
+            font-size: 11px;
+            line-height: 1.6;
+            border: 1px solid #222;
+        }
+
+        .modal .example .kw { color: var(--accent); }
+        .modal .example .str { color: #ff9933; }
+        .modal .example .com { color: #666; }
+
+        .modal .btn-start {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #33ff66 0%, #00cc44 100%);
+            border: none;
+            border-radius: 6px;
+            color: #0d0d0d;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(51,255,102,0.4);
+        }
+
+        /* Database Viewer */
+        .db-viewer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: var(--bg-secondary);
+            border-top: 2px solid var(--accent-blue);
+            display: none;
+            flex-direction: column;
+        }
+
+        .db-viewer.open { display: flex; }
+
+        .db-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #151515;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .db-title { color: var(--accent-blue); font-size: 12px; }
+
+        .db-content {
+            flex: 1;
+            overflow: auto;
+            padding: 8px;
+        }
+
+        .db-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        .db-table th, .db-table td {
+            padding: 6px 10px;
+            text-align: left;
+            border: 1px solid #333;
+        }
+
+        .db-table th {
+            background: #1a1a1a;
+            color: var(--accent-blue);
+            font-weight: 500;
+        }
+
+        .db-table td { background: #0d0d0d; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Editor Panel -->
+        <div class="editor-panel">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div class="logo">
+                    <div class="logo-icon">L</div>
+                    <span class="logo-text">LUO</span>
+                    <span class="logo-version">OMNI v1.0</span>
+                </div>
+                <div class="top-bar-actions">
+                    <button class="btn btn-lang active" data-lang="luo" onclick="setLanguage('luo')">LUO</button>
+                    <button class="btn btn-lang" data-lang="python" onclick="setLanguage('python')">🐍 Python</button>
+                    <button class="btn btn-lang" data-lang="javascript" onclick="setLanguage('javascript')">🟨 JS</button>
+                    <button class="btn btn-lang" data-lang="sql" onclick="setLanguage('sql')">💙 SQL</button>
+                    <button class="btn btn-lang" data-lang="bash" onclick="setLanguage('bash')">🟣 Bash</button>
+                    <button class="btn btn-run" onclick="runCode()">
+                        <span>▶</span> RUN
+                    </button>
+                    <button class="btn btn-secondary" onclick="toggleAIPanel()">
+                        <span>✨</span> AI
+                    </button>
+                </div>
+            </div>
+
+            <!-- Language Toolbar -->
+            <div class="lang-toolbar">
+                <button class="lang-btn active" data-lang="luo" onclick="setLanguage('luo')">🌐 LUO - Plain English</button>
+                <button class="lang-btn" data-lang="python" onclick="setLanguage('python')">🐍 Python</button>
+                <button class="lang-btn" data-lang="javascript" onclick="setLanguage('javascript')">🟨 JavaScript</button>
+                <button class="lang-btn" data-lang="sql" onclick="setLanguage('sql')">💙 SQL</button>
+                <button class="lang-btn" data-lang="bash" onclick="setLanguage('bash')">🟣 Bash</button>
+                <button class="lang-btn" onclick="clearOutput()">🗑️ Clear</button>
+            </div>
+
+            <!-- File Tabs -->
+            <div class="file-tabs">
+                <div class="file-tab active" data-file="main.luo">
+                    <span>📄</span> main.luo
+                </div>
+                <div class="file-tab" data-file="app.py">
+                    <span>🐍</span> app.py
+                </div>
+                <div class="file-tab" data-file="app.js">
+                    <span>🟨</span> app.js
+                </div>
+                <div class="file-tab" data-file="database.sql">
+                    <span>💙</span> database.sql
+                </div>
+                <div class="new-tab-btn" onclick="newFile()">+</div>
+            </div>
+
+            <!-- Editor -->
+            <div class="editor-container">
+                <div class="line-numbers" id="lineNumbers">1</div>
+                <textarea class="code-editor" id="codeEditor" spellcheck="false" placeholder="Write LUO code in plain English..."></textarea>
+            </div>
+
+            <!-- Terminal -->
+            <div class="terminal-section">
+                <div class="terminal-header">
+                    <div class="terminal-title">
+                        <span>▶</span> Output
+                    </div>
+                    <div>
+                        <button class="quick-action-btn" onclick="clearOutput()">Clear</button>
+                    </div>
+                </div>
+                <div class="terminal-output" id="terminalOutput">
+                    <div class="output-line output-info">╔═══════════════════════════════════════════════════════════════╗</div>
+                    <div class="output-line output-info">║          LUO OMNI - The Ultimate Programming Language         ║</div>
+                    <div class="output-line output-info">║  Combining: LUO + Python + JavaScript + SQL + Bash + AI       ║</div>
+                    <div class="output-line output-info">╚═══════════════════════════════════════════════════════════════╝</div>
+                    <div class="output-line output-success">✓ Ready. Enter code and click RUN or press Ctrl+Enter</div>
+                    <div class="output-line output-info">💡 Tip: Use 'RUN PYTHON', 'RUN JAVASCRIPT', 'RUN SQL' in LUO</div>
+                </div>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="status-left">
+                    <div class="status-item">
+                        <div class="status-dot" id="statusDot"></div>
+                        <span id="statusText">Ready</span>
+                    </div>
+                    <div class="status-item">UTF-8</div>
+                </div>
+                <div class="status-right">
+                    <div class="status-item" id="langStatus">LUO</div>
+                    <div class="status-item">Line 1, Col 1</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Panel -->
+        <div class="ai-panel" id="aiPanel">
+            <div class="ai-panel-header">
+                <div class="ai-panel-title">
+                    <span>✨</span> AI Assistant
+                </div>
+                <button class="ai-close-btn" onclick="toggleAIPanel()">✕</button>
+            </div>
+
+            <div class="api-key-section">
+                <input type="password" class="api-key-input" id="apiKeyInput" placeholder="sk-ant-... (Anthropic API Key)">
+            </div>
+
+            <div class="quick-actions">
+                <button class="quick-action-btn" onclick="sendQuickPrompt('Create a full password manager in LUO with encryption')">🔐 Password Manager</button>
+                <button class="quick-action-btn" onclick="sendQuickPrompt('Create a grade tracker that calculates GPA in LUO')">📊 Grade Tracker</button>
+                <button class="quick-action-btn" onclick="sendQuickPrompt('Create a chat application in LUO with real-time messaging')">💬 Chat App</button>
+                <button class="quick-action-btn" onclick="sendQuickPrompt('Create a snake game in LUO')">🐍 Snake Game</button>
+                <button class="quick-action-btn" onclick="sendQuickPrompt('Create a todo app with CRUD operations in LUO')">✅ Todo App</button>
+                <button class="quick-action-btn" onclick="sendQuickPrompt('Show me how to use Python, JavaScript, SQL, and Bash in LUO')">📚 Multi-Language</button>
+                <button class="quick-action-btn" onclick="sendQuickPrompt('Create a web scraper in LUO that fetches data from URLs')">🕸️ Web Scraper</button>
+                <button class="quick-action-btn" onclick="sendQuickPrompt('Create a REST API server in LUO with endpoints')">🌐 REST API</button>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message ai">
+                    <b>✨ Welcome to LUO OMNI!</b><br><br>
+                    I'm your AI assistant for the ultimate programming language that combines:<br>
+                    • <b>LUO</b> - Plain English programming<br>
+                    • <b>Python</b> - Full Python support<br>
+                    • <b>JavaScript</b> - Browser JS execution<br>
+                    • <b>SQL</b> - Database queries<br>
+                    • <b>Bash</b> - Shell commands<br>
+                    • <b>AI</b> - Built-in AI integration<br><br>
+                    Enter your API key above and ask me anything!
+                </div>
+            </div>
+
+            <div class="chat-input-section">
+                <textarea class="chat-input" id="chatInput" placeholder="Ask AI to create anything..." rows="1"></textarea>
+                <button class="chat-send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Welcome Modal -->
+    <div class="modal-overlay hidden" id="welcomeModal">
+        <div class="modal">
+            <h2>🚀 LUO OMNI - The Ultimate Language</h2>
+            <p>LUO is the first truly <b>omni-language</b> that combines the power of ALL programming languages into one unified system.</p>
+            
+            <div class="feature-list">
+                <div class="feature-item"><span class="feature-icon">🌐</span> LUO - Plain English</div>
+                <div class="feature-item"><span class="feature-icon">🐍</span> Python - Full Support</div>
+                <div class="feature-item"><span class="feature-icon">🟨</span> JavaScript - Native</div>
+                <div class="feature-item"><span class="feature-icon">💙</span> SQL - Built-in DB</div>
+                <div class="feature-item"><span class="feature-icon">🟣</span> Bash - Shell Commands</div>
+                <div class="feature-item"><span class="feature-icon">🤖</span> AI - Integration</div>
+            </div>
+
+            <p><b>Example - LUO in Plain English:</b></p>
+            <div class="example">
+                <span class="kw">CREATE</span> <span class="kw">VARIABLE</span> name <span class="kw">SET</span> <span class="str">"World"</span><br>
+                <span class="kw">PRINT</span> <span class="str">"Hello " + name</span><br>
+                <span class="kw">RUN PYTHON</span> <span class="str">"print('Hello from Python!')"</span><br>
+                <span class="kw">RUN JAVASCRIPT</span> <span class="str">"console.log('Hello from JS!')"</span><br>
+                <span class="kw">QUERY</span> <span class="str">"SELECT * FROM users"</span>
+            </div>
+
+            <button class="btn-start" onclick="closeWelcomeModal()">Start Coding in LUO</button>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // ==================== LUO OMNI Interpreter ====================
+        const LUO = {
+            variables: {},
+            functions: {},
+            databases: {},
+            output: [],
+            pythonReady: false,
+            sqlDB: null,
+
+            async init() {
+                await this.initPython();
+                await this.initSQL();
+            },
+
+            async initPython() {
+                try {
+                    this.pyodide = await loadPyodide();
+                    this.pythonReady = true;
+                    showOutput('✓ Python runtime ready', 'success', 'python');
+                } catch (e) {
+                    showOutput('⚠ Python init failed: ' + e.message, 'warn', 'python');
+            async initSQL() {
+                try                }
+            },
+
+ {
+                    const SQL = await initSqlJs({
+                        locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+                    });
+                    this.sqlDB = new SQL.Database();
+                    this.databases['main'] = this.sqlDB;
+                    showOutput('✓ SQL database ready', 'success', 'sql');
+                } catch (e) {
+                    showOutput('⚠ SQL init failed: ' + e.message, 'warn', 'sql');
+                }
+            },
+
+            reset() {
+                this.variables = {};
+                this.functions = {};
+                this.output = [];
+            },
+
+            // Main execute function
+            async execute(code) {
+                this.reset();
+                const lines = code.split('\n');
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line || line.startsWith('//') || line.startsWith('#')) continue;
+                    
+                    try {
+                        await this.executeLine(line, i + 1);
+                    } catch (e) {
+                        return { success: false, error: `Line ${i + 1}: ${e.message}` };
+                    }
+                }
+                
+                return { success: true, output: this.output };
+            },
+
+            async executeLine(line, lineNum) {
+                const upper = line.toUpperCase();
+
+                // === LUO Plain English Commands ===
+                
+                // PRINT / SHOW / DISPLAY
+                if (upper.startsWith('PRINT ') || upper.startsWith('SHOW ') || upper.startsWith('DISPLAY ')) {
+                    const expr = line.substring(line.indexOf(' ')+1).trim();
+                    const value = this.evalExpression(expr);
+                    this.output.push(String(value));
+                    return;
+                }
+
+                // CREATE VARIABLE / SET
+                if (upper.startsWith('CREATE VARIABLE ') || upper.startsWith('SET ') || upper.startsWith('LET ')) {
+                    let match;
+                    if (upper.startsWith('CREATE VARIABLE ')) {
+                        match = line.match(/CREATE\s+VARIABLE\s+(\w+)\s+SET\s+(.+)/i);
+                    } else if (upper.startsWith('SET ')) {
+                        match = line.match(/SET\s+(\w+)\s+TO\s+(.+)/i) || line.match(/SET\s+(\w+)\s+=\s+(.+)/i);
+                    } else {
+                        match = line.match(/LET\s+(\w+)\s+BE\s+(.+)/i) || line.match(/LET\s+(\w+)\s+=\s+(.+)/i);
+                    }
+                    if (match) {
+                        this.variables[match[1]] = this.evalExpression(match[2]);
+                        return;
+                    }
+                }
+
+                // === RUN Commands - Execute in other languages ===
+                
+                // RUN PYTHON
+                if (upper.startsWith('RUN PYTHON ') || upper.startsWith('EXECUTE PYTHON ') || upper.startsWith('PYTHON ')) {
+                    let pyCode = line.replace(/^(RUN\s+PYTHON|EXECUTE\s+PYTHON|PYTHON)\s*/i, '');
+                    if (pyCode.startsWith('"') && pyCode.endsWith('"')) {
+                        pyCode = pyCode.slice(1, -1);
+                    }
+                    if (this.pythonReady) {
+                        try {
+                            const result = await this.pyodide.runPythonAsync(pyCode);
+                            if (result !== undefined && result !== null) {
+                                this.output.push('[Python] ' + String(result));
+                            }
+                        } catch (e) {
+                            throw new Error('Python: ' + e.message);
+                        }
+                    } else {
+                        this.output.push('[Python] ⚠ Python not ready');
+                    }
+                    return;
+                }
+
+                // RUN JAVASCRIPT
+                if (upper.startsWith('RUN JAVASCRIPT ') || upper.startsWith('EXECUTE JAVASCRIPT ') || upper.startsWith('JS ') || upper.startsWith('JAVASCRIPT ')) {
+                    let jsCode = line.replace(/^(RUN\s+JAVASCRIPT|EXECUTE\s+JAVASCRIPT|JS|JAVASCRIPT)\s*/i, '');
+                    if (jsCode.startsWith('"') && jsCode.endsWith('"')) {
+                        jsCode = jsCode.slice(1, -1);
+                    }
+                    try {
+                        const result = eval(jsCode);
+                        if (result !== undefined) {
+                            this.output.push('[JavaScript] ' + String(result));
+                        }
+                    } catch (e) {
+                        throw new Error('JavaScript: ' + e.message);
+                    }
+                    return;
+                }
+
+                // RUN BASH / SHELL
+                if (upper.startsWith('RUN BASH ') || upper.startsWith('RUN SHELL ') || upper.startsWith('EXECUTE BASH ') || upper.startsWith('BASH ')) {
+                    let cmd = line.replace(/^(RUN\s+BASH|RUN\s+SHELL|EXECUTE\s+BASH|BASH)\s*/i, '');
+                    if (cmd.startsWith('"') && cmd.endsWith('"')) {
+                        cmd = cmd.slice(1, -1);
+                    }
+                    // Simulate common bash commands
+                    const result = this.simulateBash(cmd);
+                    this.output.push('[Bash] ' + result);
+                    return;
+                }
+
+                // === SQL Commands ===
+                
+                // QUERY SQL
+                if (upper.startsWith('QUERY ') || upper.startsWith('RUN SQL ') || upper.startsWith('SQL ')) {
+                    let sql = line.replace(/^(QUERY|SQL|RUN\s+SQL)\s*/i, '');
+                    if (sql.startsWith('"') && sql.endsWith('"')) {
+                        sql = sql.slice(1, -1);
+                    }
+                    try {
+                        const results = this.sqlDB.exec(sql);
+                        if (results.length > 0) {
+                            const cols = results[0].columns;
+                            const values = results[0].values;
+                            this.output.push('[SQL] ' + cols.join(' | '));
+                            values.slice(0, 10).forEach(row => {
+                                this.output.push('[SQL] ' + row.join(' | '));
+                            });
+                            if (values.length > 10) {
+                                this.output.push('[SQL] ... ' + (values.length - 10) + ' more rows');
+                            }
+                        } else {
+                            this.output.push('[SQL] Query executed successfully');
+                        }
+                    } catch (e) {
+                        throw new Error('SQL: ' + e.message);
+                    }
+                    return;
+                }
+
+                // CREATE TABLE
+                if (upper.startsWith('CREATE TABLE ') || upper.startsWith('MAKE TABLE ')) {
+                    let tableMatch = line.match(/(?:CREATE\s+TABLE|MAKE\s+TABLE)\s+(\w+)\s*\((.+)\)/i);
+                    if (tableMatch) {
+                        const tableName = tableMatch[1];
+                        const columns = tableMatch[2];
+                        const sql = `CREATE TABLE ${tableName} (${columns})`;
+                        try {
+                            this.sqlDB.run(sql);
+                            this.output.push(`[SQL] Table '${tableName}' created`);
+                        } catch (e) {
+                            throw new Error('SQL: ' + e.message);
+                        }
+                        return;
+                    }
+                }
+
+                // INSERT INTO
+                if (upper.startsWith('INSERT ') || upper.startsWith('ADD ')) {
+                    let insertMatch = line.match(/(?:INSERT\s+INTO|ADD\s+TO)\s+(\w+)\s*\((.*?)\)\s*VALUES\s*\((.*?)\)/i);
+                    if (insertMatch) {
+                        const table = insertMatch[1];
+                        const cols = insertMatch[2];
+                        const vals = insertMatch[3];
+                        const sql = `INSERT INTO ${table} (${cols}) VALUES (${vals})`;
+                        try {
+                            this.sqlDB.run(sql);
+                            this.output.push(`[SQL] Row added to '${table}'`);
+                        } catch (e) {
+                            throw new Error('SQL: ' + e.message);
+                        }
+                        return;
+                    }
+                }
+
+                // === AI Commands ===
+                
+                // ASK AI / AI /
+                if (upper.startsWith('ASK AI ') || upper.startsWith('AI ASK ') || upper.startsWith('AI ')) {
+                    let prompt = line.replace(/^(ASK\s+AI|AI\s+ASK|AI)\s*/i, '');
+                    if (prompt.startsWith('"') && prompt.endsWith('"')) {
+                        prompt = prompt.slice(1, -1);
+                    }
+                    this.output.push('[AI] Use AI Panel to ask: ' + prompt.substring(0, 50) + '...');
+                    return;
+                }
+
+                // === Web/Network Commands ===
+                
+                // FETCH / GET URL
+                if (upper.startsWith('FETCH ') || upper.startsWith('GET URL ') || upper.startsWith('DOWNLOAD ')) {
+                    let url = line.replace(/^(FETCH|GET\s+URL|DOWNLOAD)\s*/i, '');
+                    if (url.startsWith('"') && url.endsWith('"')) {
+                        url = url.slice(1, -1);
+                    }
+                    this.output.push('[Web] Would fetch: ' + url);
+                    // Real implementation would use fetch API
+                    return;
+                }
+
+                // === Loop/Function (simplified) ===
+                if (upper.startsWith('REPEAT ') || upper.startsWith('LOOP ')) {
+                    return; // Skip for now
+                }
+
+                // Try evaluating as expression
+                if (line.trim()) {
+                    try {
+                        const result = this.evalExpression(line);
+                        if (result !== undefined) {
+                            this.output.push(String(result));
+                        }
+                    } catch (e) {
+                        // Unknown command - try as raw Python
+                        if (this.pythonReady) {
+                            try {
+                                const result = await this.pyodide.runPythonAsync(line);
+                                if (result !== undefined) {
+                                    this.output.push(String(result));
+                                }
+                            } catch (e2) {}
+                        }
+                    }
+                }
+            },
+
+            evalExpression(expr) {
+                expr = expr.trim();
+                
+                // String literals
+                if ((expr.startsWith('"') && expr.endsWith('"')) || 
+                    (expr.startsWith("'") && expr.endsWith("'"))) {
+                    return expr.slice(1, -1);
+                }
+
+                // Number literals
+                if (!isNaN(expr) && expr !== '') {
+                    return parseFloat(expr);
+                }
+
+                // Boolean
+                if (expr.toUpperCase() === 'TRUE') return true;
+                if (expr.toUpperCase() === 'FALSE') return false;
+
+                // Variables
+                if (this.variables.hasOwnProperty(expr)) {
+                    return this.variables[expr];
+                }
+
+                // String concatenation
+                if (expr.includes(' + ')) {
+                    const parts = expr.split(/\s*\+\s*/).map(p => this.evalExpression(p));
+                    return parts.join('');
+                }
+
+                // Arithmetic
+                if (/^[\d\s+\-*/().]+$/.test(expr)) {
+                    try {
+                        return Function('"use strict"; return (' + expr + ')')();
+                    } catch (e) {}
+                }
+
+                return expr;
+            },
+
+            simulateBash(cmd) {
+                // Simulate common bash commands
+                const parts = cmd.split(' ');
+                const command = parts[0];
+                
+                switch (command) {
+                    case 'ls':
+                        return 'main.luo  app.py  app.js  database.sql  samples/';
+                    case 'pwd':
+                        return '/home/luo/workspace';
+                    case 'whoami':
+                        return 'luo-user';
+                    case 'date':
+                        return new Date().toString();
+                    case 'echo':
+                        return parts.slice(1).join(' ');
+                    case 'cat':
+                        return '[File content would be displayed]';
+                    case 'mkdir':
+                        return `Directory '${parts[1]}' created`;
+                    case 'rm':
+                        return `Removed: ${parts[1]}`;
+                    case 'cp':
+                        return `Copied ${parts[1]} to ${parts[2]}`;
+                    case 'mv':
+                        return `Moved ${parts[1]} to ${parts[2]}`;
+                    case 'clear':
+                        return '[Screen cleared]';
+                    case 'help':
+                        return 'Available: ls, pwd, whoami, date, echo, cat, mkdir, rm, cp, mv, clear';
+                    default:
+                        return `Command '${command}' simulated. Add real backend for execution.`;
+                }
+            }
+        };
+
+        // ==================== Application State ====================
+        let currentLanguage = 'luo';
+        let files = [
+            { name: 'main.luo', lang: 'luo', content: `// 🌟 LUO OMNI - The Ultimate Language
+// Combine LUO + Python + JavaScript + SQL + Bash + AI
+
+CREATE VARIABLE greeting SET "Welcome to LUO OMNI!"
+PRINT greeting
+
+// Run Python directly
+RUN PYTHON "print('🐍 Hello from Python!')"
+
+// Run JavaScript directly  
+RUN JAVASCRIPT "console.log('🟨 Hello from JavaScript!')"
+
+// Create a table in SQL
+CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)
+
+// Add data
+INSERT INTO users (name, email) VALUES ("John", "john@luo.dev")
+INSERT INTO users (name, email) VALUES ("Jane", "jane@luo.dev")
+
+// Query the data
+QUERY "SELECT * FROM users"
+
+// Use Bash
+BASH "ls -la"
+
+// AI integration - ask the AI panel!
+ASK AI "How do I create a web server in LUO?"
+`},
+            { name: 'app.py', lang: 'python', content: `# Python - Full Power
+import json
+from datetime import datetime
+
+def hello():
+    return "Hello from Python!"
+
+print(hello())
+
+# Data processing
+data = {"users": [{"name": "John", "age": 30}, {"name": "Jane", "age": 25}]}
+print(json.dumps(data, indent=2))
+
+# Math
+import math
+print(f"Pi: {math.pi}")
+print(f"Square root of 16: {math.sqrt(16)}")
+`},
+            { name: 'app.js', lang: 'javascript', content: `// JavaScript - Browser Power
+const greeting = "Hello from JavaScript!";
+console.log(greeting);
+
+// Array methods
+const numbers = [1, 2, 3, 4, 5];
+const doubled = numbers.map(n => n * 2);
+console.log("Doubled:", doubled);
+
+// Objects
+const user = {
+    name: "John",
+    email: "john@luo.dev",
+    greet() {
+        return \`Hello, I'm \${this.name}!\`;
+    }
+};
+console.log(user.greet());
+
+// Async
+console.log("Async demo:");
+setTimeout(() => console.log("Delayed!"), 100);
+`},
+            { name: 'database.sql', lang: 'sql', content: `-- SQL - Database Operations
+
+-- Create users table
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE,
+    age INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert sample data
+INSERT INTO users (name, email, age) VALUES 
+    ('John Doe', 'john@luo.dev', 30),
+    ('Jane Smith', 'jane@luo.dev', 25),
+    ('Bob Wilson', 'bob@luo.dev', 35);
+
+-- Query all users
+SELECT * FROM users;
+
+-- Query with filter
+SELECT name, email FROM users WHERE age > 28;
+
+-- Update
+UPDATE users SET age = 31 WHERE name = 'John Doe';
+
+-- Delete
+-- DELETE FROM users WHERE name = 'Bob';
+
+-- Aggregations
+SELECT COUNT(*) as total_users, AVG(age) as avg_age FROM users;
+`}
+        ];
+        let activeFileIndex = 0;
+        let chatHistory = [];
+
+        // ==================== DOM Elements ====================
+        const codeEditor = document.getElementById('codeEditor');
+        const lineNumbers = document.getElementById('lineNumbers');
+        const terminalOutput = document.getElementById('terminalOutput');
+        const aiPanel = document.getElementById('aiPanel');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const welcomeModal = document.getElementById('welcomeModal');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const langStatus = document.getElementById('langStatus');
+
+        // ==================== Core Functions ====================
+        function updateLineNumbers() {
+            const lines = codeEditor.value.split('\n').length;
+            let numbers = '';
+            for (let i = 1; i <= lines; i++) {
+                numbers += i + '\n';
+            }
+            lineNumbers.textContent = numbers;
+        }
+
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            
+            // Update buttons
+            document.querySelectorAll('.btn-lang, .lang-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.lang === lang) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Find file for this language
+            const fileIndex = files.findIndex(f => f.lang === lang || 
+                (lang === 'luo' && f.name.endsWith('.luo')) ||
+                (lang === 'python' && f.name.endsWith('.py')) ||
+                (lang === 'javascript' && f.name.endsWith('.js')) ||
+                (lang === 'sql' && f.name.endsWith('.sql')) ||
+                (lang === 'bash' && f.name.endsWith('.sh'))
+            );
+            
+            if (fileIndex >= 0) {
+                activeFileIndex = fileIndex;
+                codeEditor.value = files[activeFileIndex].content;
+                renderFileTabs();
+            }
+
+            langStatus.textContent = lang.toUpperCase();
+            
+            const placeholders = {
+                luo: 'Write LUO code in plain English...',
+                python: 'Write Python code...',
+                javascript: 'Write JavaScript code...',
+                sql: 'Write SQL queries...',
+                bash: 'Write Bash commands...'
+            };
+            codeEditor.placeholder = placeholders[lang] || 'Write code...';
+            
+            updateLineNumbers();
+        }
+
+        function renderFileTabs() {
+            const tabsContainer = document.querySelector('.file-tabs');
+            const existingTabs = tabsContainer.querySelectorAll('.file-tab');
+            existingTabs.forEach(tab => tab.remove());
+            
+            files.forEach((file, index) => {
+                const tab = document.createElement('div');
+                tab.className = 'file-tab' + (index === activeFileIndex ? ' active' : '');
+                
+                const icons = { '.luo': '📄', '.py': '🐍', '.js': '🟨', '.sql': '💙', '.sh': '🟣' };
+                const ext = file.name.substring(file.name.lastIndexOf('.'));
+                const icon = icons[ext] || '📄';
+                
+                tab.innerHTML = `<span>${icon}</span> ${file.name}`;
+                tab.onclick = () => switchToFile(index);
+                tabsContainer.insertBefore(tab, document.querySelector('.new-tab-btn'));
+            });
+        }
+
+        function switchToFile(index) {
+            files[activeFileIndex].content = codeEditor.value;
+            activeFileIndex = index;
+            codeEditor.value = files[activeFileIndex].content;
+            renderFileTabs();
+            updateLineNumbers();
+        }
+
+        function newFile() {
+            const ext = currentLanguage === 'luo' ? '.luo' : 
+                       currentLanguage === 'python' ? '.py' :
+                       currentLanguage === 'javascript' ? '.js' :
+                       currentLanguage === 'sql' ? '.sql' : '.sh';
+            const fileName = 'untitled' + (files.length + 1) + ext;
+            files.push({ name: fileName, lang: currentLanguage, content: '' });
+            activeFileIndex = files.length - 1;
+            renderFileTabs();
+            codeEditor.value = '';
+            updateLineNumbers();
+            showToast('New file: ' + fileName);
+        }
+
+        function clearOutput() {
+            terminalOutput.innerHTML = '';
+            showOutput('Output cleared', 'info');
+        }
+
+        function showOutput(text, type = 'result', prefix = '') {
+            const div = document.createElement('div');
+            div.className = 'output-line output-' + type;
+            
+            const prefixMap = {
+                'python': '🐍 ',
+                'js': '🟨 ',
+                'javascript': '🟨 ',
+                'sql': '💙 ',
+                'bash': '🟣 ',
+                'ai': '✨ '
+            };
+            
+            const prefixText = prefixMap[prefix] || (prefix ? `[${prefix}] ` : '> ');
+            div.innerHTML = `<span class="output-prompt">${prefixText}</span><span class="output-result">${escapeHtml(text)}</span>`;
+            terminalOutput.appendChild(div);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ==================== Run Code ====================
+        async function runCode() {
+            const code = codeEditor.value;
+            if (!code.trim()) {
+                showOutput('No code to run', 'warn');
+                return;
+            }
+
+            statusDot.classList.add('loading');
+            statusText.textContent = 'Running...';
+            
+            files[activeFileIndex].content = code;
+
+            const lang = currentLanguage;
+            
+            try {
+                if (lang === 'luo') {
+                    const result = await LUO.execute(code);
+                    if (result.success) {
+                        result.output.forEach(line => showOutput(line, 'success'));
+                    } else {
+                        showOutput(result.error, 'error');
+                    }
+                } else if (lang === 'python') {
+                    if (LUO.pythonReady) {
+                        try {
+                            const result = await LUO.pyodide.runPythonAsync(code);
+                            if (result !== undefined && result !== null) {
+                                showOutput(String(result), 'result', 'python');
+                            }
+                        } catch (e) {
+                            showOutput('Python Error: ' + e.message, 'error', 'python');
+                        }
+                    } else {
+                        showOutput('Python not ready yet', 'warn', 'python');
+                    }
+                } else if (lang === 'javascript') {
+                    try {
+                        const logs = [];
+                        const originalLog = console.log;
+                        console.log = (...args) => logs.push(args.map(a => String(a)).join(' '));
+                        
+                        eval(code);
+                        
+                        console.log = originalLog;
+                        logs.forEach(log => showOutput(log, 'result', 'javascript'));
+                    } catch (e) {
+                        showOutput('JavaScript Error: ' + e.message, 'error', 'javascript');
+                    }
+                } else if (lang === 'sql') {
+                    try {
+                        const results = LUO.sqlDB.exec(code);
+                        if (results.length > 0) {
+                            results.forEach(result => {
+                                showOutput(result.columns.join(' | '), 'result', 'sql');
+                                result.values.slice(0, 20).forEach(row => {
+                                    showOutput(row.join(' | '), 'result', 'sql');
+                                });
+                            });
+                        } else {
+                            showOutput('Query executed successfully', 'success', 'sql');
+                        }
+                    } catch (e) {
+                        showOutput('SQL Error: ' + e.message, 'error', 'sql');
+                    }
+                } else if (lang === 'bash') {
+                    const lines = code.split('\n');
+                    for (const line of lines) {
+                        if (line.trim()) {
+                            showOutput(LUO.simulateBash(line.trim()), 'result', 'bash');
+                        }
+                    }
+                }
+                
+                statusText.textContent = 'Done';
+            } catch (e) {
+                showOutput('Error: ' + e.message, 'error');
+                statusText.textContent = 'Error';
+            }
+            
+            setTimeout(() => {
+                statusDot.classList.remove('loading');
+                statusText.textContent = 'Ready';
+            }, 500);
+        }
+
+        // ==================== AI Panel ====================
+        function toggleAIPanel() {
+            aiPanel.classList.toggle('open');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        async function sendQuickPrompt(prompt) {
+            aiPanel.classList.add('open');
+            chatInput.value = prompt;
+            await sendMessage();
+        }
+
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                showToast('Please enter your Anthropic API key', 'error');
+                return;
+            }
+
+            addMessage(message, 'user');
+            chatInput.value = '';
+            sendBtn.disabled = true;
+
+            const typingIndicator = document.createElement('div');
+            typingIndicator.className = 'typing-indicator';
+            typingIndicator.innerHTML = '<span></span><span></span><span></span>';
+            chatMessages.appendChild(typingIndicator);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            chatHistory.push({ role: 'user', content: message });
+
+            try {
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-3-5-sonnet-20241022',
+                        max_tokens: 4000,
+                        messages: [
+                            { role: 'user', content: `You are a LUO OMNI programming expert. LUO OMNI is the ultimate programming language that combines:
+
+1. **LUO** - Plain English programming (e.g., "CREATE VARIABLE x SET 5")
+2. **Python** - Full Python support via RUN PYTHON command
+3. **JavaScript** - Browser JS execution via RUN JAVASCRIPT
+4. **SQL** - Built-in database via QUERY command
+5. **Bash** - Shell commands via BASH command
+6. **AI** - Built-in AI integration
+
+User request: ${message}
+
+Always provide working code that combines these languages when needed. Format LUO code in \`\`\`luo blocks, Python in \`\`\`python, JavaScript in \`\`\`javascript, SQL in \`\`\`sql.` }
+                        ]
+                    })
+                });
+
+                typingIndicator.remove();
+
+                if (!response.ok) throw new Error('API request failed');
+
+                const data = await response.json();
+                const aiResponse = data.content[0].text;
+
+                addMessage(aiResponse, 'ai');
+                chatHistory.push({ role: 'assistant', content: aiResponse });
+
+            } catch (error) {
+                typingIndicator.remove();
+                showToast('Error: ' + error.message, 'error');
+                addMessage('Sorry, I encountered an error. Please check your API key and try again.', 'ai');
+            }
+
+            sendBtn.disabled = false;
+        }
+
+        function addMessage(content, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + sender;
+
+            // Parse code blocks
+            let formattedContent = content;
+            
+            const blockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+            formattedContent = formattedContent.replace(blockRegex, (match, lang, code) => {
+                const escapedCode = escapeHtml(code);
+                return `<div class="code-block-wrapper"><pre>${escapedCode}</pre><div class="code-actions"><button class="code-action-btn" onclick="loadCode(this, '${lang || 'luo'}')">📋 Load</button><button class="code-action-btn" onclick="runLoadedCode(this, '${lang || 'luo'}')">▶ Run</button></div></div>`;
+            });
+
+            formattedContent = formattedContent.replace(/\n/g, '<br>');
+            messageDiv.innerHTML = formattedContent;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function loadCode(btn, lang) {
+            const codeBlock = btn.closest('.code-block-wrapper');
+            const code = codeBlock.querySelector('pre').textContent;
+            
+            // Switch to language
+            const langMap = { 'luo': 'luo', 'python': 'python', 'js': 'javascript', 'javascript': 'javascript', 'sql': 'sql', 'bash': 'bash' };
+            const targetLang = langMap[lang] || 'luo';
+            setLanguage(targetLang);
+            
+            codeEditor.value = code;
+            updateLineNumbers();
+            showToast('Code loaded into ' + targetLang.toUpperCase() + ' editor', 'info');
+        }
+
+        function runLoadedCode(btn, lang) {
+            const codeBlock = btn.closest('.code-block-wrapper');
+            const code = codeBlock.querySelector('pre').textContent;
+            
+            const langMap = { 'luo': 'luo', 'python': 'python', 'js': 'javascript', 'javascript': 'javascript', 'sql': 'sql', 'bash': 'bash' };
+            const targetLang = langMap[lang] || 'luo';
+            
+            setLanguage(targetLang);
+            codeEditor.value = code;
+            updateLineNumbers();
+            
+            runCode();
+            showToast('Code loaded and executed', 'info');
+        }
+
+        // ==================== Event Listeners ====================
+        codeEditor.addEventListener('input', updateLineNumbers);
+        codeEditor.addEventListener('scroll', () => {
+            lineNumbers.scrollTop = codeEditor.scrollTop;
+        });
+        
+        codeEditor.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = codeEditor.selectionStart;
+                const end = codeEditor.selectionEnd;
+                codeEditor.value = codeEditor.value.substring(0, start) + '    ' + codeEditor.value.substring(end);
+                codeEditor.selectionStart = codeEditor.selectionEnd = start + 4;
+                updateLineNumbers();
+            }
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                runCode();
+            }
+        });
+
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        chatInput.addEventListener('input', () => {
+            chatInput.style.height = 'auto';
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 80) + 'px';
+        });
+
+        function closeWelcomeModal() {
+            welcomeModal.classList.add('hidden');
+            localStorage.setItem('luoOmniVisited', 'true');
+        }
+
+        // ==================== Initialize ====================
+        async function init() {
+            codeEditor.value = files[0].content;
+            updateLineNumbers();
+            renderFileTabs();
+            setLanguage('luo');
+
+            if (!localStorage.getItem('luoOmniVisited')) {
+                welcomeModal.classList.remove('hidden');
+            }
+
+            const savedApiKey = localStorage.getItem('luoApiKey');
+            if (savedApiKey) {
+                apiKeyInput.value = savedApiKey;
+            }
+
+            // Initialize LUO runtime
+            statusText.textContent = 'Initializing...';
+            await LUO.init();
+            statusText.textContent = 'Ready';
+            
+            // Load saved chat
+            const savedHistory = localStorage.getItem('luoChatHistory');
+            if (savedHistory) {
+                chatHistory = JSON.parse(savedHistory);
+            }
+        }
+
+        apiKeyInput.addEventListener('change', () => {
+            localStorage.setItem('luoApiKey', apiKeyInput.value);
+        });
+
+        function saveChatHistory() {
+            localStorage.setItem('luoChatHistory', JSON.stringify(chatHistory.slice(-50)));
+        }
+
+        const originalSendMessage = sendMessage;
+        sendMessage = async function() {
+            await originalSendMessage();
+            saveChatHistory();
+        };
+
+        init();
+    </script>
+</body>
+</html>

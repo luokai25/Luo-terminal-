@@ -1,0 +1,56 @@
+// ═════════════════════════════════════════════════════════════
+// 🌟 LUO OMNI - Student Grade Tracker
+// Full CRUD with Python calculations + SQL storage
+// ═════════════════════════════════════════════════════════════
+
+PRINT "╔══════════════════════════════════════════╗"
+PRINT "║     LUO OMNI - Grade Tracker             ║"
+PRINT "╚══════════════════════════════════════════╝"
+PRINT ""
+
+// ─── Setup Database ───
+CREATE TABLE students (id INTEGER PRIMARY KEY, name TEXT, math INTEGER, english INTEGER, science INTEGER, history INTEGER)
+CREATE TABLE grades (letter TEXT, min_score INTEGER, max_score INTEGER)
+
+PRINT "📊 Setting up grade scale..."
+INSERT INTO grades (letter, min_score, max_score) VALUES ("A+", 95, 100)
+INSERT INTO grades (letter, min_score, max_score) VALUES ("A", 90, 94)
+INSERT INTO grades (letter, min_score, max_score) VALUES ("B+", 85, 89)
+INSERT INTO grades (letter, min_score, max_score) VALUES ("B", 80, 84)
+INSERT INTO grades (letter, min_score, max_score) VALUES ("C+", 75, 79)
+INSERT INTO grades (letter, min_score, max_score) VALUES ("C", 70, 74)
+INSERT INTO grades (letter, min_score, max_score) VALUES ("D", 60, 69)
+INSERT INTO grades (letter, min_score, max_score) VALUES ("F", 0, 59)
+
+PRINT "✓ Grade scale configured"
+PRINT ""
+
+// ─── Add Students ───
+PRINT "👨‍🎓 Adding students..."
+INSERT INTO students (name, math, english, science, history) VALUES ("Alice Johnson", 95, 88, 92, 90)
+INSERT INTO students (name, math, english, science, history) VALUES ("Bob Smith", 78, 82, 85, 79)
+INSERT INTO students (name, math, english, science, history) VALUES ("Charlie Brown", 92, 95, 88, 91)
+INSERT INTO students (name, math, english, science, history) VALUES ("Diana Prince", 88, 90, 94, 87)
+INSERT INTO students (name, math, english, science, history) VALUES ("Eve Wilson", 65, 72, 68, 70)
+
+PRINT "✓ Added 5 students"
+PRINT ""
+
+// ─── Show All Students ───
+PRINT "📋 All Students:"
+QUERY "SELECT name, math, english, science, history FROM students"
+
+PRINT ""
+
+// ─── Calculate Averages ───
+PRINT "📈 Grade Summary:"
+QUERY "SELECT name, ROUND((math + english + science + history) / 4.0, 1) as average FROM students ORDER BY average DESC"
+
+PRINT ""
+
+// ─── Top Performers ───
+PRINT "🏆 Top Performers (90+):"
+QUERY "SELECT name FROM students WHERE (math + english + science + history) / 4.0 >= 90"
+
+PRINT ""
+PRINT "✅ Grade Tracker Complete!"

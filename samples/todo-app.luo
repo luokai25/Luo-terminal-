@@ -1,0 +1,49 @@
+// ===== Todo App in LUO =====
+
+PRINT "=== Todo App ==="
+PRINT ""
+
+// Define some tasks
+CREATE VARIABLE task1 SET "Learn LUO programming"
+CREATE VARIABLE task2 SET "Build a password manager"
+CREATE VARIABLE task3 SET "Create a web server"
+CREATE VARIABLE task4 SET "Deploy to production"
+
+// Task list
+PRINT "📋 Your Tasks:"
+PRINT ""
+PRINT "1. " + task1
+PRINT "2. " + task2  
+PRINT "3. " + task3
+PRINT "4. " + task4
+PRINT ""
+
+// Mark completion status
+CREATE VARIABLE completed1 SET "yes"
+CREATE VARIABLE completed2 SET "no"
+CREATE VARIABLE completed3 SET "no"
+CREATE VARIABLE completed4 SET "yes"
+
+PRINT "✅ Completed:"
+IF completed1 EQUALS "yes" THEN
+    PRINT "- " + task1
+END
+IF completed4 EQUALS "yes" THEN
+    PRINT "- " + task4
+END
+
+PRINT ""
+PRINT "⏳ Pending:"
+IF completed2 EQUALS "no" THEN
+    PRINT "- " + task2
+END
+IF completed3 EQUALS "no" THEN
+    PRINT "- " + task3
+END
+
+// Summary
+CREATE VARIABLE totalTasks SET 4
+CREATE VARIABLE completedCount SET 2
+
+PRINT ""
+PRINT "Progress: " + completedCount + "/" + totalTasks + " tasks completed"

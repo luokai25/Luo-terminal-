@@ -1,0 +1,65 @@
+// ===== LUO AI Examples =====
+
+PRINT "=== LUO AI Integration Examples ==="
+PRINT ""
+
+// Example 1: Ask AI a question
+// In the AI Panel, you can ask:
+// "How do I create a loop in LUO?"
+
+PRINT "1. ASK AI Command"
+PRINT "   Use the AI Assistant panel to ask questions"
+PRINT "   Example: 'How do I create a function in LUO?'"
+PRINT ""
+
+PRINT "2. Variables"
+CREATE VARIABLE greeting SET "Hello, LUO!"
+CREATE VARIABLE count SET 10
+PRINT "   greeting = " + greeting
+PRINT "   count = " + count
+PRINT ""
+
+PRINT "3. String Concatenation"
+CREATE VARIABLE firstName SET "John"
+CREATE VARIABLE lastName SET "Doe"
+PRINT "   Full name: " + firstName + " " + lastName
+PRINT ""
+
+PRINT "4. Numbers and Math"
+CREATE VARIABLE price SET 100
+CREATE VARIABLE tax SET 0.1
+CREATE VARIABLE total SET price + (price * tax)
+PRINT "   Price: " + price
+PRINT "   Tax (10%): " + (price * tax)
+PRINT "   Total: " + total
+PRINT ""
+
+PRINT "5. Conditions"
+CREATE VARIABLE age SET 25
+IF age GREATER THAN 18 THEN
+    PRINT "   Adult: Yes"
+END
+PRINT ""
+
+PRINT "6. Comparison Operators"
+CREATE VARIABLE x SET 10
+CREATE VARIABLE y SET 20
+PRINT "   x = " + x + ", y = " + y
+IF x LESS THAN y THEN
+    PRINT "   x < y: True"
+END
+IF x NOT EQUALS y THEN
+    PRINT "   x != y: True"
+END
+PRINT ""
+
+PRINT "7. Boolean"
+CREATE VARIABLE isActive SET TRUE
+IF isActive THEN
+    PRINT "   Account is active"
+END
+
+PRINT ""
+PRINT "=== More Examples ==="
+PRINT "Check the AI Assistant panel for more complex examples!"
+PRINT "Try asking: 'Create a password manager in LUO'"
